@@ -46,7 +46,7 @@ def mktex(pages, infile):
         \pagebreak
       }
     \end{document}
-    """ % (pages, infile)
+    """ % (pages + 1, infile)
 
     with tempfile.NamedTemporaryFile(delete=False) as tmp:
         tmp.write(template.encode())
