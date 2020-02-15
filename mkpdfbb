@@ -48,7 +48,7 @@ def mktex(pages, infile):
     \end{document}
     """ % (pages + 1, infile)
 
-    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+    with tempfile.NamedTemporaryFile() as tmp:
         tmp.write(template.encode())
         tmp.flush()
 
