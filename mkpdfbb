@@ -1,0 +1,74 @@
+#! /usr/bin/env python3
+
+'''
+Draw bounding box around PDF
+'''
+
+import sys
+import os
+import argparse
+import subprocess
+import tempfile
+
+
+def getpages(infile):
+    '''
+    Get number of pages
+    '''
+
+    proc = subprocess.Popen(['pdfinfo', infile], stdout=subprocess.PIPE)
+    for line in proc.stdout:
+        if line.startswith(b'Pages'):
+            return int(line.split()[1])
+
+
+def mktex(pages, infile):
+    '''
+    Make LaTeX template
+    '''
+
+    template = r"""
+    \documentclass[a4paper]{article}
+    \usepackage{tikz}
+    \usepackage{graphicx}
+    \usepackage{forloop}
+
+    \pagestyle{empty}
+    \newcounter{pagenumber}
+
+    \begin{document}
+      \forloop{pagenumber}{1}{\value{pagenumber} < %d}{
+        \begin{tikzpicture}[remember picture,overlay]
+          \node [rectangle,draw] at (current page.center) 
+            {\includegraphics[page=\value{pagenumber}]{%s}};
+        \end{tikzpicture}
+
+        \pagebreak
+      }
+    \end{document}
+    """ % (pages, infile)
+
+    with tempfile.NamedTemporaryFile(delete=False) as tmp:
+        tmp.write(template.encode())
+        tmp.flush()
+
+        job = '%s-bb' % os.path.splitext(os.path.basename(infile))[0]
+        subprocess.call(['latexmk', '-jobname=' + job, '-pdf', tmp.name])
+        subprocess.call(['latexmk', '-c', '-f', job])
+
+
+def main():
+    '''
+    Run
+    '''
+
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument('infile')
+    args = parser.parse_args()
+
+    pages = getpages(args.infile)
+    mktex(pages, args.infile)
+
+
+if __name__ == '__main__':
+    sys.exit(main())
